@@ -33,7 +33,7 @@ public class ServerInfo implements Packet {
         String serverName = null;
         if ((nullBits & 0x1) != 0) {
             int offset = varsOffset + serverNameOffset;
-            Pair<String, Integer> varString = ProtocolUtil.readVarString(buf, offset, 100);
+            Pair<String, Integer> varString = ProtocolUtil.readVarString(buf, offset, 4096000);
             serverName = varString.left();
             readViaOffsets += varString.right();
         }
@@ -41,7 +41,7 @@ public class ServerInfo implements Packet {
         String motd = null;
         if ((nullBits & 0x2) != 0) {
             int offset = varsOffset + motdOffset;
-            Pair<String, Integer> varString = ProtocolUtil.readVarString(buf, offset, 500);
+            Pair<String, Integer> varString = ProtocolUtil.readVarString(buf, offset, 4096000);
             motd = varString.left();
             readViaOffsets += varString.right();
         }

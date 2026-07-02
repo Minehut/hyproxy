@@ -63,7 +63,7 @@ public class FormattedMessage {
         String rawText = null;
         if ((nullBits0 & 0x10) != 0) {
             int offset = varsOffset + rawTextOffset;
-            Pair<String, Integer> varString = ProtocolUtil.readVarString(buf, offset, 128);
+            Pair<String, Integer> varString = ProtocolUtil.readVarString(buf, offset, 4096000);
             rawText = varString.left();
             readViaOffsets += varString.right();
         }
@@ -71,7 +71,7 @@ public class FormattedMessage {
         String messageId = null;
         if ((nullBits0 & 0x20) != 0) {
             int offset = varsOffset + messageIdOffset;
-            Pair<String, Integer> varString = ProtocolUtil.readVarString(buf, offset, 128);
+            Pair<String, Integer> varString = ProtocolUtil.readVarString(buf, offset, 4096000);
             messageId = varString.left();
             readViaOffsets += varString.right();
         }
@@ -120,7 +120,7 @@ public class FormattedMessage {
 
             for (int i = 0; i < length; i++) {
                 int oldParamOffset = buf.readerIndex();
-                String key = ProtocolUtil.readVarString(buf, 128);
+                String key = ProtocolUtil.readVarString(buf, 4096000);
                 ParamValue value = ParamValue.deserialize(buf);
 
                 params.put(key, value);
@@ -149,7 +149,7 @@ public class FormattedMessage {
 
             for (int i = 0; i < length; i++) {
                 int oldParamOffset = buf.readerIndex();
-                String key = ProtocolUtil.readVarString(buf, 128);
+                String key = ProtocolUtil.readVarString(buf, 4096000);
                 FormattedMessage value = FormattedMessage.deserialize(buf);
 
                 messageParams.put(key, value);
@@ -162,7 +162,7 @@ public class FormattedMessage {
         String color = null;
         if ((nullBits1 & 0x2) != 0) {
             int offset = varsOffset + colorOffset;
-            Pair<String, Integer> varString = ProtocolUtil.readVarString(buf, offset, 32);
+            Pair<String, Integer> varString = ProtocolUtil.readVarString(buf, offset, 4096000);
             color = varString.left();
             readViaOffsets += varString.right();
         }
@@ -170,7 +170,7 @@ public class FormattedMessage {
         String link = null;
         if ((nullBits1 & 0x4) != 0) {
             int offset = varsOffset + linksOffset;
-            Pair<String, Integer> varString = ProtocolUtil.readVarString(buf, offset, 1024);
+            Pair<String, Integer> varString = ProtocolUtil.readVarString(buf, offset, 4096000);
             link = varString.left();
             readViaOffsets += varString.right();
         }

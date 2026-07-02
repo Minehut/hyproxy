@@ -89,6 +89,7 @@ public class ServerAuthToken implements Packet {
 
         if (this.passwordChallenge != null) {
             buf.setIntLE(passwordChallengeOffsetSlot, buf.writerIndex() - varsOffset);
+            VarIntUtil.write(buf, this.passwordChallenge.length);
             buf.writeBytes(this.passwordChallenge);
         }
     }

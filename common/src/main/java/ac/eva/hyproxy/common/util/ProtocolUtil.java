@@ -19,8 +19,9 @@ public class ProtocolUtil {
     public static final ChannelFutureListener CLOSE_ON_COMPLETE = ProtocolUtil::closeApplicationOnComplete;
 
     public void writeVarString(ByteBuf buf, String str) {
-        writeVarString(buf, str, StandardCharsets.US_ASCII);
+        writeVarString(buf, str, StandardCharsets.UTF_8);
     }
+    
     public void writeVarString(ByteBuf buf, String str, Charset charset) {
         byte[] bytes = str.getBytes(charset);
         VarIntUtil.write(buf, bytes.length);
@@ -28,7 +29,7 @@ public class ProtocolUtil {
     }
 
     public String readVarString(ByteBuf buf, int maxLength) {
-        return readVarString(buf, maxLength, StandardCharsets.US_ASCII);
+        return readVarString(buf, maxLength, StandardCharsets.UTF_8);
     }
 
     public Pair<String, Integer> readVarString(ByteBuf buf, int offset, int maxLength) {
