@@ -9,6 +9,23 @@ proxy-secret-file = "proxy.secret"
 # if we should bind on ipv6 too, heavily recommended
 ipv6-support = true
 
+# maximum QUIC UDP payload size (bytes) used with clients. this caps the datagram
+# size in BOTH directions: it is advertised to the client as our max_udp_payload_size
+# (so the client never sends us anything larger) and it bounds our own outgoing
+# datagrams. keep it small enough to survive the whole path MTU.
+# IMPORTANT (MHPL-615): Cloudflare Spectrum does NOT fragment UDP and silently drops
+# any datagram too large to forward, so when the proxy is behind Spectrum this must
+# stay under the Spectrum edge->origin forwardable size. 1200 is QUIC's universal
+# floor (always deliverable); raise toward 1350 to recover throughput once stability
+# is confirmed. must be >= 1200.
+max-udp-payload-size = 1200
+
+# whether QUIC should probe for a larger path MTU (DPLPMTUD). keep this off behind
+# Cloudflare Spectrum: probing grows datagrams past the Spectrum-forwardable size and,
+# with ICMP "packet too big" filtered on anycast paths, those packets get blackholed.
+# only enable for direct (non-Spectrum) UDP exposure where the path MTU is trustworthy.
+discover-pmtu = false
+
 # initial backend or backend set we should in order try to connect the user to.
 initial-backend = "main"
 
