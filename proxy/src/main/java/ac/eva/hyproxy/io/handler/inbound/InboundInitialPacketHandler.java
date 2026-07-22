@@ -24,39 +24,29 @@ public class InboundInitialPacketHandler implements HytalePacketHandler {
 
     @Override
     public boolean handle(Connect connect) {
-        // Note: we intentionally do NOT gate on protocolCrc here. The CRC varies between Hytale
-        // client builds and the backend server validates it authoritatively; the proxy just
-        // decodes and forwards (player.protocolCrc is passed through to the backend Connect).
-
-        // A malformed/unsupported clientType byte decodes to null (ClientType.getById is
-        // out-of-range-safe). Reject cleanly instead of NPEing downstream.
         if (connect.getClientType() == null) {
-            log.warn("rejecting Connect: invalid client type");
-            connection.disconnect("Invalid client type");
+            connection.disconnect("invalid client type");
             return true;
         }
 
         String identityToken = connect.getIdentityToken();
         if (identityToken == null) {
-            log.warn("rejecting Connect: no identity token (offline mode not supported)");
             connection.disconnect("This proxy only supports online mode players!");
             return true;
         }
 
         JWTVerifier.IdentityTokenClaims claims = connection.getProxy().getJwtVerifier().validateIdentityToken(identityToken);
         if (claims == null) {
-            log.warn("rejecting Connect: identity token failed validation (validateIdentityToken returned null)");
-            connection.disconnect("Invalid or expired identity token");
+            connection.disconnect("invalid or expired identity token");
             return true;
         }
 
         UUID profileId = claims.getSubjectAsUUID();
         if (profileId == null) {
-            log.warn("rejecting Connect: identity token missing/malformed subject");
-            connection.disconnect("Invalid identity token: missing or malformed subject");
+            connection.disconnect("invalid identity token: missing or malformed subject");
             return true;
         }
-        
+
         if (connection.getProxy().getPlayerByProfileId(profileId) != null) {
             connection.disconnect("You are already connected to this proxy!");
             return true;

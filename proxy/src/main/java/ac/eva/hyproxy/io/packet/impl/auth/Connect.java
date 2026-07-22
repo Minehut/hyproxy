@@ -119,9 +119,7 @@ public class Connect implements Packet {
         buf.writeByte(nullBits);
         buf.writeIntLE(this.protocolCrc);
         buf.writeIntLE(this.protocolBuildNumber);
-        
-        // clientVersion is a fixed 20-byte ASCII field; pad/truncate to exactly 20 bytes so the
-        // fixed block stays aligned (must match deserialize's US_ASCII 20-byte read).
+
         byte[] clientVersionBytes = new byte[20];
         byte[] clientVersionSrc = this.clientVersion.getBytes(StandardCharsets.US_ASCII);
         System.arraycopy(clientVersionSrc, 0, clientVersionBytes, 0, Math.min(clientVersionSrc.length, 20));

@@ -10,18 +10,6 @@ import java.text.ParseException;
 import java.util.Arrays;
 import java.util.Map;
 
-/**
- * A player's cosmetic appearance, mirroring the engine's {@code PlayerSkin} structure. The proxy
- * treats it as an opaque pass-through: each part is an optional id sourced from the signed identity
- * token's {@code profile.skin} claim and re-serialized into {@link ac.eva.hyproxy.io.packet.impl.auth.InsecurePlayerOptions}
- * so insecure-mode backends can render the player. The backend is responsible for validating the parts.
- *
- * <p>Wire layout (little-endian): nullBits(3, one bit per part in {@link #PART_KEYS} order), then 20
- * int32-LE offset slots (-1 when the part is absent) relative to the variable block at byte 83,
- * followed by each present part as a var-ascii string.
- *
- * @author santio
- */
 @Slf4j
 public class PlayerSkin {
     private static final int NULL_BITS_SIZE = 3;
@@ -49,7 +37,7 @@ public class PlayerSkin {
             return null;
         }
 
-        final Map<String, Object> skin;
+        Map<String, Object> skin;
         try {
             skin = JSONObjectUtils.parse(json);
         } catch (ParseException e) {
@@ -57,7 +45,7 @@ public class PlayerSkin {
             return null;
         }
 
-        final String[] parts = new String[PART_KEYS.length];
+        String[] parts = new String[PART_KEYS.length];
         for (int i = 0; i < PART_KEYS.length; i++) {
             if (skin.get(PART_KEYS[i]) instanceof String part) {
                 parts[i] = part;
@@ -68,7 +56,7 @@ public class PlayerSkin {
     }
 
     public void serialize(ByteBuf buf) {
-        final byte[] nullBits = new byte[NULL_BITS_SIZE];
+        byte[] nullBits = new byte[NULL_BITS_SIZE];
         for (int i = 0; i < this.parts.length; i++) {
             if (this.parts[i] != null) {
                 nullBits[i >> 3] |= (byte) (1 << (i & 7));
@@ -77,14 +65,14 @@ public class PlayerSkin {
 
         buf.writeBytes(nullBits);
 
-        final int slotsStart = buf.writerIndex();
+        int slotsStart = buf.writerIndex();
         for (int i = 0; i < this.parts.length; i++) {
             buf.writeIntLE(0);
         }
 
-        final int varsOffset = buf.writerIndex();
+        int varsOffset = buf.writerIndex();
         for (int i = 0; i < this.parts.length; i++) {
-            final int slot = slotsStart + i * Integer.BYTES;
+            int slot = slotsStart + i * Integer.BYTES;
 
             if (this.parts[i] == null) {
                 buf.setIntLE(slot, -1);

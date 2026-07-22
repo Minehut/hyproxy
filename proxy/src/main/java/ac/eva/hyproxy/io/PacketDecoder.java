@@ -39,7 +39,7 @@ public class PacketDecoder extends ByteToMessageDecoder {
         }
 
         if (DEBUG_PACKETS) {
-            final int frameLength = 8 + payloadLength;
+            int frameLength = 8 + payloadLength;
             log.info(
                 "INBOUND frame ({}B):\n{}",
                 frameLength,
@@ -57,8 +57,6 @@ public class PacketDecoder extends ByteToMessageDecoder {
         try {
             Packet packet = packetInfo.deserializeFunction().apply(payload);
             out.add(packet);
-        } catch (Exception e) {
-            log.warn("failed to decode packet id {} - dropping packet", packetId, e);
         } finally {
             payload.release();
         }
