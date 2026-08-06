@@ -95,15 +95,28 @@ public class HytaleConnection extends ChannelInboundHandlerAdapter {
         ctx.fireChannelWritabilityChanged();
     }
 
-    private @Nullable QuicStreamChannel getPeerStream(NetworkChannel networkChannel) {
+    @Override
+    public void channelReadComplete(ChannelHandlerContext ctx) {
+        HytaleConnection peer = this.getPeerConnection();
+        if (peer != null) {
+            peer.flushStreams();
+        }
+
+        ctx.fireChannelReadComplete();
+    }
+
+    private @Nullable HytaleConnection getPeerConnection() {
         if (this.player == null) {
             return null;
         }
 
-        HytaleConnection peer = this.player.getInboundConnection() == this
+        return this.player.getInboundConnection() == this
                 ? this.player.getOutboundConnection()
                 : this.player.getInboundConnection();
+    }
 
+    private @Nullable QuicStreamChannel getPeerStream(NetworkChannel networkChannel) {
+        HytaleConnection peer = this.getPeerConnection();
         if (peer == null) {
             return null;
         }
@@ -157,8 +170,15 @@ public class HytaleConnection extends ChannelInboundHandlerAdapter {
     }
 
     public void disconnect(String message, DisconnectType type) {
-        this.send(new ServerDisconnect(Message.raw(message).getFormatted(), type)).addListener(ProtocolUtil.CLOSE_ON_COMPLETE);
+        ChannelFuture future = this.send(new ServerDisconnect(Message.raw(message).getFormatted(), type));
         this.disconnected = true;
+
+        if (future != null) {
+            future.addListener(ProtocolUtil.CLOSE_ON_COMPLETE);
+        } else {
+            ProtocolUtil.closeApplicationConnection(this.channel);
+        }
+
         if (this.hasPlayer()) {
             log.info("{} got disconnected: {}", this.getIdentifier(), message);
         }
@@ -184,6 +204,25 @@ public class HytaleConnection extends ChannelInboundHandlerAdapter {
         return null;
     }
 
+    public void relay(NetworkChannel channel, Object msg) {
+        QuicStreamChannel stream = this.streams.get(channel);
+
+        if (stream != null && stream.isActive()) {
+            stream.write(msg);
+            return;
+        }
+
+        ReferenceCountUtil.release(msg);
+    }
+
+    public void flushStreams() {
+        for (QuicStreamChannel stream : this.streams.values()) {
+            if (stream.isActive()) {
+                stream.flush();
+            }
+        }
+    }
+
     public ChannelFuture send(NetworkChannel channel, Packet packet) {
         return this.write(channel, packet);
     }
@@ -193,6 +232,6 @@ public class HytaleConnection extends ChannelInboundHandlerAdapter {
     }
 
     public void close() {
-        ProtocolUtil.closeConnection(this.channel);
+        ProtocolUtil.closeApplicationConnection(this.channel);
     }
 }

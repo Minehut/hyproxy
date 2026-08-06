@@ -72,6 +72,7 @@ public class InboundChannelInitializer extends ChannelInitializer<QuicStreamChan
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
+        log.error("error while initializing inbound stream for {}, closing connection", ctx.channel().remoteAddress(), cause);
         ProtocolUtil.closeConnection(ctx.channel());
     }
 }
