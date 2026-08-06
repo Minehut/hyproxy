@@ -34,7 +34,7 @@ public class OutboundForwardingPacketHandler implements HytalePacketHandler {
         HyProxyPlayer player = connection.ensurePlayer();
 
         if (!player.hasActiveInboundConnection()) return;
-        player.sendToPlayer(channel, packet);
+        player.getInboundConnection().relay(channel, packet);
     }
 
     @Override
@@ -42,7 +42,7 @@ public class OutboundForwardingPacketHandler implements HytalePacketHandler {
         HyProxyPlayer player = connection.ensurePlayer();
 
         if (!player.hasActiveInboundConnection()) return;
-        player.getInboundConnection().write(channel, buf.retain());
+        player.getInboundConnection().relay(channel, buf.retain());
     }
 
     // this should never happen in normal conditions, but we make it happen in the backend plugin to have a way for the backend
@@ -133,6 +133,8 @@ public class OutboundForwardingPacketHandler implements HytalePacketHandler {
         HyProxyPlayer player = connection.ensurePlayer();
 
         if (!player.hasActiveInboundConnection()) return;
-        player.getInboundConnection().close();
+
+        log.warn("backend {} closed the connection for {}, disconnecting player", backend.getInfo().id(), connection.getIdentifier());
+        player.getInboundConnection().disconnect("Lost connection to the server");
     }
 }
