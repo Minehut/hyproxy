@@ -64,6 +64,8 @@ public class OutboundInitialPacketHandler implements HytalePacketHandler {
         HyProxyPlayer player = connection.ensurePlayer();
 
         if (!player.hasActiveInboundConnection()) return;
-        player.getInboundConnection().close();
+
+        log.warn("backend {} closed the connection during setup for {}, disconnecting player", backend.getInfo().id(), connection.getIdentifier());
+        player.getInboundConnection().disconnect("Failed to connect to the server");
     }
 }

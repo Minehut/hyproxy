@@ -116,7 +116,7 @@ public class InboundForwardingPacketHandler implements HytalePacketHandler {
         HyProxyPlayer player = connection.ensurePlayer();
 
         if (!player.hasActiveOutboundConnection()) return;
-        player.sendAsPlayer(channel, packet);
+        player.getOutboundConnection().relay(channel, packet);
     }
 
     @Override
@@ -124,7 +124,7 @@ public class InboundForwardingPacketHandler implements HytalePacketHandler {
         HyProxyPlayer player = connection.ensurePlayer();
 
         if (!player.hasActiveOutboundConnection()) return;
-        player.getOutboundConnection().write(channel, buf.retain());
+        player.getOutboundConnection().relay(channel, buf.retain());
     }
 
     @Override
@@ -132,6 +132,8 @@ public class InboundForwardingPacketHandler implements HytalePacketHandler {
         HyProxyPlayer player = connection.ensurePlayer();
 
         if (!player.hasActiveOutboundConnection()) return;
-        ProtocolUtil.closeConnection(player.getOutboundConnection().getChannel());
+
+        player.getOutboundConnection().flushStreams();
+        ProtocolUtil.closeApplicationConnection(player.getOutboundConnection().getChannel());
     }
 }

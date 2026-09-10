@@ -3,6 +3,7 @@ package ac.eva.hyproxy.io;
 import ac.eva.hyproxy.common.util.ProtocolUtil;
 import ac.eva.hyproxy.io.packet.Packet;
 import ac.eva.hyproxy.io.packet.PacketRegistry;
+import ac.eva.hyproxy.util.NettyUtil;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufUtil;
 import io.netty.channel.ChannelHandlerContext;
@@ -25,6 +26,7 @@ public class PacketDecoder extends ByteToMessageDecoder {
         int payloadLength = in.readIntLE();
 
         if (payloadLength < 0 || payloadLength > MAX_PAYLOAD_LENGTH) {
+            log.warn("received frame with invalid payload length {} from {}, closing connection", payloadLength, NettyUtil.formatRemoteAddress(ctx.channel()));
             in.skipBytes(in.readableBytes());
             ProtocolUtil.closeConnection(ctx.channel());
             return;

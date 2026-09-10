@@ -70,6 +70,7 @@ public class QuicChannelInboundHandlerAdapter extends ChannelInboundHandlerAdapt
                         QuicChannel channel = (QuicChannel) ctx.channel();
                         X509Certificate clientCert = extractClientCertificate(channel);
                         if (clientCert == null) {
+                            log.warn("connection from {} provided no client certificate, closing", channel.remoteAddress());
                             ProtocolUtil.closeConnection(channel);
                             return;
                         }
