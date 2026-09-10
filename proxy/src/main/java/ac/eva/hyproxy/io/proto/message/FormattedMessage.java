@@ -17,6 +17,14 @@ import java.util.Map;
 @ToString
 @Getter
 @Setter
+/**
+ * Wire layout follows Hytale protocol 3 (0.6.5): 2 null-bit bytes, then the fixed block
+ * bold/italic/monospace/underlined/strikethrough/markupEnabled (bytes 2..7), then eight
+ * little-endian int offsets (bytes 8..39) and the variable block from byte 40.
+ * Null bits, byte 0: bold 0x1, italic 0x2, monospace 0x4, underlined 0x8, strikethrough 0x10,
+ * rawText 0x20, messageId 0x40, children 0x80. Byte 1: params 0x1, messageParams 0x2,
+ * color 0x4, link 0x8, image 0x10.
+ */
 public class FormattedMessage {
     private @Nullable String rawText;
     private @Nullable String messageId;
@@ -28,6 +36,7 @@ public class FormattedMessage {
     private MaybeBool italic = MaybeBool.NULL;
     private MaybeBool monospace = MaybeBool.NULL;
     private MaybeBool underlined = MaybeBool.NULL;
+    private MaybeBool strikethrough = MaybeBool.NULL;
     private @Nullable String link;
     private @Nullable FormattedMessageImage image;
     private boolean markupEnabled;
@@ -40,12 +49,14 @@ public class FormattedMessage {
         byte italicByte = buf.readByte();
         byte monospaceByte = buf.readByte();
         byte underlinedByte = buf.readByte();
+        byte strikethroughByte = buf.readByte();
         boolean markupEnabled = buf.readByte() != 0;
 
         MaybeBool bold = (nullBits0 & 0x1) != 0 ? MaybeBool.fromBool(boldByte != 0) : MaybeBool.NULL;
         MaybeBool italic = (nullBits0 & 0x2) != 0 ? MaybeBool.fromBool(italicByte != 0) : MaybeBool.NULL;
         MaybeBool monospace = (nullBits0 & 0x4) != 0 ? MaybeBool.fromBool(monospaceByte != 0) : MaybeBool.NULL;
         MaybeBool underlined = (nullBits0 & 0x8) != 0 ? MaybeBool.fromBool(underlinedByte != 0) : MaybeBool.NULL;
+        MaybeBool strikethrough = (nullBits0 & 0x10) != 0 ? MaybeBool.fromBool(strikethroughByte != 0) : MaybeBool.NULL;
 
         int rawTextOffset = buf.readIntLE();
         int messageIdOffset = buf.readIntLE();
@@ -61,7 +72,7 @@ public class FormattedMessage {
         int readViaOffsets = 0;
 
         String rawText = null;
-        if ((nullBits0 & 0x10) != 0) {
+        if ((nullBits0 & 0x20) != 0) {
             int offset = varsOffset + rawTextOffset;
             Pair<String, Integer> varString = ProtocolUtil.readVarString(buf, offset, 4096);
             rawText = varString.left();
@@ -69,7 +80,7 @@ public class FormattedMessage {
         }
 
         String messageId = null;
-        if ((nullBits0 & 0x20) != 0) {
+        if ((nullBits0 & 0x40) != 0) {
             int offset = varsOffset + messageIdOffset;
             Pair<String, Integer> varString = ProtocolUtil.readVarString(buf, offset, 256);
             messageId = varString.left();
@@ -77,7 +88,7 @@ public class FormattedMessage {
         }
 
         FormattedMessage[] children = null;
-        if ((nullBits0 & 0x40) != 0) {
+        if ((nullBits0 & 0x80) != 0) {
             int oldOffset = buf.readerIndex();
 
             int offset = varsOffset + childrenOffset;
@@ -103,7 +114,7 @@ public class FormattedMessage {
         }
 
         Map<String, ParamValue> params = null;
-        if ((nullBits0 & 0x80) != 0) {
+        if ((nullBits1 & 0x1) != 0) {
             int oldOffset = buf.readerIndex();
             int offset = varsOffset + paramsOffset;
 
@@ -132,7 +143,7 @@ public class FormattedMessage {
 
         Map<String, FormattedMessage> messageParams = null;
 
-        if ((nullBits1 & 0x1) != 0) {
+        if ((nullBits1 & 0x2) != 0) {
             int oldOffset = buf.readerIndex();
             int offset = varsOffset + messageParamsOffset;
 
@@ -160,7 +171,7 @@ public class FormattedMessage {
         }
 
         String color = null;
-        if ((nullBits1 & 0x2) != 0) {
+        if ((nullBits1 & 0x4) != 0) {
             int offset = varsOffset + colorOffset;
             Pair<String, Integer> varString = ProtocolUtil.readVarString(buf, offset, 256);
             color = varString.left();
@@ -168,7 +179,7 @@ public class FormattedMessage {
         }
 
         String link = null;
-        if ((nullBits1 & 0x4) != 0) {
+        if ((nullBits1 & 0x8) != 0) {
             int offset = varsOffset + linksOffset;
             Pair<String, Integer> varString = ProtocolUtil.readVarString(buf, offset, 4096);
             link = varString.left();
@@ -176,7 +187,7 @@ public class FormattedMessage {
         }
 
         FormattedMessageImage image = null;
-        if ((nullBits1 & 0x8) != 0) {
+        if ((nullBits1 & 0x10) != 0) {
             int offset = varsOffset + imageOffset;
             Pair<FormattedMessageImage, Integer> pair = FormattedMessageImage.deserialize(buf, offset);
             image = pair.left();
@@ -195,6 +206,7 @@ public class FormattedMessage {
                 italic,
                 monospace,
                 underlined,
+                strikethrough,
                 link,
                 image,
                 markupEnabled
@@ -221,36 +233,40 @@ public class FormattedMessage {
             nullBits0 = (byte) (nullBits0 | 0x8);
         }
 
-        if (this.rawText != null) {
+        if (this.strikethrough != MaybeBool.NULL) {
             nullBits0 = (byte) (nullBits0 | 0x10);
         }
 
-        if (this.messageId != null) {
+        if (this.rawText != null) {
             nullBits0 = (byte) (nullBits0 | 0x20);
         }
 
-        if (this.children != null) {
+        if (this.messageId != null) {
             nullBits0 = (byte) (nullBits0 | 0x40);
         }
 
-        if (this.params != null) {
+        if (this.children != null) {
             nullBits0 = (byte) (nullBits0 | 0x80);
         }
 
-        if (this.messageParams != null) {
+        if (this.params != null) {
             nullBits1 = (byte) (nullBits1 | 0x1);
         }
 
-        if (this.color != null) {
+        if (this.messageParams != null) {
             nullBits1 = (byte) (nullBits1 | 0x2);
         }
 
-        if (this.link != null) {
+        if (this.color != null) {
             nullBits1 = (byte) (nullBits1 | 0x4);
         }
 
-        if (this.image != null) {
+        if (this.link != null) {
             nullBits1 = (byte) (nullBits1 | 0x8);
+        }
+
+        if (this.image != null) {
+            nullBits1 = (byte) (nullBits1 | 0x10);
         }
 
         buf.writeByte(nullBits0);
@@ -259,6 +275,7 @@ public class FormattedMessage {
         buf.writeByte(this.italic == MaybeBool.TRUE ? 1 : 0);
         buf.writeByte(this.monospace == MaybeBool.TRUE ? 1 : 0);
         buf.writeByte(this.underlined == MaybeBool.TRUE ? 1 : 0);
+        buf.writeByte(this.strikethrough == MaybeBool.TRUE ? 1 : 0);
         buf.writeByte(this.markupEnabled ? 1 : 0);
 
         int rawTextOffsetSlot = buf.writerIndex();

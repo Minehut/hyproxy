@@ -44,7 +44,7 @@ public class InboundForwardingPacketHandler implements HytalePacketHandler {
 
         HyProxy proxy = player.getProxy();
         QuicSslContext sslContext = QuicSslContextBuilder.forClient()
-                .applicationProtocols("hytale/2")
+                .applicationProtocols(ProtocolUtil.ALPN)
                 .keyManager(proxy.getCertificate().key(), null, proxy.getCertificate().cert())
                 .trustManager(InsecureTrustManagerFactory.INSTANCE)
                 .build();
