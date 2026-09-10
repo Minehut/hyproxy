@@ -43,6 +43,13 @@ public class HyProxyConfiguration {
     private Map<String, String> backends;
     private Map<String, List<String>> permissions;
 
+    // QUIC UDP datagram sizing. maxUdpPayloadSize caps datagrams in both directions so
+    // they survive the path MTU; discoverPmtu toggles DPLPMTUD probing. See MHPL-615:
+    // both are tuned down when the proxy sits behind Cloudflare Spectrum, which drops
+    // oversized/fragmented UDP instead of forwarding it.
+    private int maxUdpPayloadSize;
+    private boolean discoverPmtu;
+
     public InetSocketAddress getBind() {
         return AddressUtil.parseAndResolveAddress(bind);
     }
@@ -184,6 +191,9 @@ public class HyProxyConfiguration {
             String initialBackend = config.getOrElse("initial-backend", "main");
             boolean proxyCommunicationEnabled = config.getOrElse("proxy-communication", true);
 
+            int maxUdpPayloadSize = config.getIntOrElse("max-udp-payload-size", 1200);
+            boolean discoverPmtu = config.getOrElse("discover-pmtu", false);
+
             CommentedConfig backendConfig = config.get("backends");
             Map<String, String> backends = backendConfig.valueMap()
                     .entrySet()
@@ -208,7 +218,9 @@ public class HyProxyConfiguration {
                     initialBackend,
                     proxyCommunicationEnabled,
                     backends,
-                    permissions
+                    permissions,
+                    maxUdpPayloadSize,
+                    discoverPmtu
             );
         }
     }

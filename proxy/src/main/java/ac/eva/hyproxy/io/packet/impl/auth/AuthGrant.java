@@ -34,7 +34,7 @@ public class AuthGrant implements Packet {
 
         if ((nullBits & 0x1) != 0) {
             int offset = varsOffset + authorizationGrantOffset;
-            Pair<String, Integer> varString = ProtocolUtil.readVarString(buf, offset, 128);
+            Pair<String, Integer> varString = ProtocolUtil.readVarString(buf, offset, 4096);
             authorizationGrant = varString.left();
             readViaOffsets += varString.right();
         }
@@ -43,7 +43,7 @@ public class AuthGrant implements Packet {
 
         if ((nullBits & 0x2) != 0) {
             int offset = varsOffset + serverIdentityTokenOffset;
-            Pair<String, Integer> varString = ProtocolUtil.readVarString(buf, offset, 128);
+            Pair<String, Integer> varString = ProtocolUtil.readVarString(buf, offset, 8192);
             serverIdentityToken = varString.left();
             readViaOffsets += varString.right();
         }

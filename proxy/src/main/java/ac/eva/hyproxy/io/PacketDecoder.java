@@ -4,6 +4,7 @@ import ac.eva.hyproxy.common.util.ProtocolUtil;
 import ac.eva.hyproxy.io.packet.Packet;
 import ac.eva.hyproxy.io.packet.PacketRegistry;
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufUtil;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ByteToMessageDecoder;
 import lombok.extern.slf4j.Slf4j;
@@ -12,6 +13,7 @@ import java.util.List;
 
 @Slf4j
 public class PacketDecoder extends ByteToMessageDecoder {
+    private static final boolean DEBUG_PACKETS = Boolean.getBoolean("hyproxy.debugBytes");
     private static final int MAX_PAYLOAD_LENGTH = 1677721600;
 
     @Override
@@ -34,6 +36,15 @@ public class PacketDecoder extends ByteToMessageDecoder {
         if (in.readableBytes() < payloadLength) {
             in.resetReaderIndex();
             return;
+        }
+
+        if (DEBUG_PACKETS) {
+            int frameLength = 8 + payloadLength;
+            log.info(
+                "INBOUND frame ({}B):\n{}",
+                frameLength,
+                ByteBufUtil.prettyHexDump(in, originalReaderIndex, Math.min(frameLength, 256))
+            );
         }
 
         if (packetInfo == null) {

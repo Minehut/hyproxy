@@ -12,6 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.Nullable;
 import ac.eva.hyproxy.HyProxy;
 import ac.eva.hyproxy.common.util.ProtocolUtil;
+import ac.eva.hyproxy.config.HyProxyConfiguration;
 import ac.eva.hyproxy.io.channel.InboundChannelInitializer;
 import ac.eva.hyproxy.io.proto.DisconnectType;
 
@@ -33,6 +34,9 @@ public class QuicChannelInboundHandlerAdapter extends ChannelInboundHandlerAdapt
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) {
+        HyProxyConfiguration config = this.proxy.getConfiguration();
+        int maxUdpPayloadSize = config.getMaxUdpPayloadSize();
+
         ChannelHandler handler = new QuicServerCodecBuilder()
                 .sslContext(this.sslContext)
                 .tokenHandler(InsecureQuicTokenHandler.INSTANCE)
@@ -45,7 +49,15 @@ public class QuicChannelInboundHandlerAdapter extends ChannelInboundHandlerAdapt
                 .initialMaxStreamDataBidirectionalLocal(128 * 1024)
                 .initialMaxStreamDataBidirectionalRemote(128 * 1024)
                 .initialMaxStreamsBidirectional(8)
-                .discoverPmtu(true)
+                // MHPL-615: cap the QUIC datagram size so packets survive the path MTU.
+                // maxRecvUdpPayloadSize is advertised to the client as our
+                // max_udp_payload_size, forcing it to never send us datagrams larger than
+                // this (the inbound direction that Cloudflare Spectrum blackholes); the
+                // send cap bounds our outbound datagrams. discoverPmtu is off behind
+                // Spectrum so DPLPMTUD does not grow datagrams past the forwardable size.
+                .maxRecvUdpPayloadSize(maxUdpPayloadSize)
+                .maxSendUdpPayloadSize(maxUdpPayloadSize)
+                .discoverPmtu(config.isDiscoverPmtu())
                 .congestionControlAlgorithm(QuicCongestionControlAlgorithm.BBR)
                 .handler(new ChannelInboundHandlerAdapter() {
                     @Override

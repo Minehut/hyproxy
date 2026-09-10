@@ -82,6 +82,35 @@ public class HytaleConnection extends ChannelInboundHandlerAdapter {
         }
     }
 
+    @Override
+    public void channelWritabilityChanged(ChannelHandlerContext ctx) {
+        QuicStreamChannel streamChannel = (QuicStreamChannel) ctx.channel();
+        NetworkChannel networkChannel = this.channelsByStreamId.getOrDefault(streamChannel.streamId(), NetworkChannel.DEFAULT);
+
+        QuicStreamChannel peerStream = this.getPeerStream(networkChannel);
+        if (peerStream != null && peerStream.isActive()) {
+            peerStream.config().setAutoRead(streamChannel.isWritable());
+        }
+
+        ctx.fireChannelWritabilityChanged();
+    }
+
+    private @Nullable QuicStreamChannel getPeerStream(NetworkChannel networkChannel) {
+        if (this.player == null) {
+            return null;
+        }
+
+        HytaleConnection peer = this.player.getInboundConnection() == this
+                ? this.player.getOutboundConnection()
+                : this.player.getInboundConnection();
+
+        if (peer == null) {
+            return null;
+        }
+
+        return peer.streams.get(networkChannel);
+    }
+
     public String getIdentifier() {
         if (this.hasPlayer()) {
             return player.getIdentifier();
