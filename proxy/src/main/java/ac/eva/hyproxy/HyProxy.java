@@ -31,6 +31,7 @@ import io.netty.channel.socket.DatagramChannel;
 import io.netty.channel.socket.SocketProtocolFamily;
 import io.netty.channel.socket.nio.NioChannelOption;
 import io.netty.handler.codec.quic.QuicSslContext;
+import ac.eva.hyproxy.common.util.ProtocolUtil;
 import io.netty.handler.codec.quic.QuicSslContextBuilder;
 import io.netty.handler.ssl.ClientAuth;
 import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
@@ -96,7 +97,7 @@ public class HyProxy {
 
             QuicSslContext sslContext = QuicSslContextBuilder
                     .forServer(this.certificate.key(), null, this.certificate.cert())
-                    .applicationProtocols("hytale/2")
+                    .applicationProtocols(ProtocolUtil.ALPN)
                     .earlyData(false).clientAuth(ClientAuth.REQUIRE)
                     .trustManager(InsecureTrustManagerFactory.INSTANCE)
                     .build();

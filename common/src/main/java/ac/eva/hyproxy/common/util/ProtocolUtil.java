@@ -16,6 +16,15 @@ import java.util.UUID;
 
 @UtilityClass
 public class ProtocolUtil {
+    /**
+     * QUIC ALPN the Hytale client and server negotiate. Hytale 0.6.5 (protocol
+     * version 3, build 209) moved from "hytale/2" to "hytale/3"; a client that
+     * cannot negotiate this reports the server as outdated before any packet is
+     * exchanged. The packets this proxy decodes are layout-identical across the
+     * two versions, so only the ALPN string needs to follow the game.
+     */
+    public static final String ALPN = "hytale/3";
+
     public static final ChannelFutureListener CLOSE_ON_COMPLETE = ProtocolUtil::closeApplicationOnComplete;
 
     public void writeVarString(ByteBuf buf, String str) {
